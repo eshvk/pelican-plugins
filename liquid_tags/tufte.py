@@ -2,7 +2,8 @@
 Tufte Tags
 ----------
 
-This implements a Liquid-style Tufte tag for newthought, sidenote for Pelican.
+This implements a Liquid-style Tufte tag for newthought, sidenote, marginnote
+for Pelican.
 
 Uses same schema as https://github.com/clayh53/tufte-jekyll/
 
@@ -31,7 +32,22 @@ Output
 "<label for="for-newsidenote" class="margin-toggle sidenote-number">
 </label>
 <input type="checkbox" id="for-newsidenote" class="margin-toggle"/>
-<span class="sidenote">Text</span>"
+<span class="sidenote">New sidenote</span>"
+
+Syntax
+------
+{% marginnote marginnote-id "Text" %}
+
+Example
+-------
+{% marginnote for-newmarginnote "New marginnote" %}
+
+Output
+------
+"<label for="for-newmarginnote" class="margin-toggle">
+</label>
+<input type="checkbox" id="for-newmarginnote" class="margin-toggle"/>
+<span class="marginnote">New marginnote</span>"
 
 """
 import re
@@ -41,6 +57,9 @@ from .mdx_liquid_tags import LiquidTags
 SIDENOTE_SYNTAX = '''{% sidenote sidenote_id ["content"|'content'] %}'''
 SIDENOTE_REGEX = re.compile(
     '''(?P<sidenote_id>[\S+]+)(?:\s+(['"]{0,1})(?P<text>.+)(\\2))?''')
+MARGINNOTE_SYNTAX = '''{% marginnote marginnote_id ["content"|'content'] %}'''
+MARGINNOTE_REGEX = re.compile(
+    '''(?P<marginnote_id>[\S+]+)(?:\s+(['"]{0,1})(?P<text>.+)(\\2))?''')
 NEWTHOUGHT_SYNTAX = "{% newthought text %}"
 # Captures all text within the new thought text.
 NEWTHOUGHT_REGEX = re.compile(r'([^"]+)')
@@ -81,6 +100,24 @@ def sidenote(preprocessor, tag, markup):
     else:
         raise ValueError('Error processing input. '
                          'Expected syntax: {}'.format(SIDENOTE_SYNTAX))
+
+@LiquidTags.register('marginnote')
+def marginnote(preprocessor, tag, markup):
+    match = MARGINNOTE_REGEX.search(markup)
+    attrs = None
+    if match:
+        attrs = dict(
+            [(key, value.strip())
+             for (key, value) in match.groupdict().items() if value])
+        marginnote_out = """<label for="{marginnoteid}"
+        class="margin-toggle"></label>
+        <input type="checkbox" id="{marginnoteid}" class="margin-toggle"/>
+        <span class="marginnote">{text}</span>""".format(marginnoteid=attrs['marginnote_id'],text=attrs['text'])
+        return marginnote_out
+    else:
+        raise ValueError('Error processing input. '
+                         'Expected syntax: {}'.format(MARGINNOTE_SYNTAX))
+
 # ---------------------------------------------------
 # This import allows image tag to be a Pelican plugin
 from liquid_tags import register  # noqa
